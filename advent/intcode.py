@@ -5,10 +5,11 @@ def ReadTxtOpcode(file_name):
 
 class IntcodeComputer():
     
-    def __init__(self, memory=[], address=0, input_val=None):
+    def __init__(self, memory=[], address=0, input_vals=[], debug=False):
         self.memory = memory
         self.address = address
-        self.input_val = input_val
+        self.input_vals = input_vals
+        self.debug = debug
         
     def ProcessOpcode(self, full_opcode):
         opcode = full_opcode % 100
@@ -53,14 +54,19 @@ class IntcodeComputer():
             else:
                 raise Exception('Unrecognized Opcode ' + str(opcode) + ' at memory address ' + str(self.address))
             params = self.memory[(self.address+1):(self.address+delta)]
-            self.address += delta
+            param_modes = param_modes[:len(params)]
 
             # Update parameters according to paramater modes
             params = self.ProcessParameters(opcode, params, param_modes)
             
+            # Debug
+            if self.debug:
+                print(self.address, full_opcode, opcode, params, param_modes)
+            
             # Run opcode
+            self.address += delta
             output = self.RunOpcode(opcode, params)
-            if output:
+            if output is not None:
                 return output
             
     def RunOpcode(self, opcode=None, params=None):
@@ -74,10 +80,9 @@ class IntcodeComputer():
             self.memory[params[2]] = params[0] * params[1]
 
         elif opcode == 3:
-            if not self.input_val:
+            if len(self.input_vals) == 0:
                 raise Exception('No input value at memory address ' + str(self.address))
-            self.memory[params[0]] = self.input_val
-            self.input_val = None
+            self.memory[params[0]] = self.input_vals.pop(0)
 
         elif opcode == 4:
             return params[0]
@@ -101,14 +106,3 @@ class IntcodeComputer():
                 self.memory[params[2]] = 1
             else:
                 self.memory[params[2]] = 0
-            
-        
-input = ReadTxtOpcode('inputs/day5.txt')
-
-c = IntcodeComputer(input.copy(), 0, 1)
-o = c.RunProgram()
-print(o)
-
-c = IntcodeComputer(input.copy(), 0, 5)
-o = c.RunProgram()
-print(o)

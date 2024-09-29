@@ -4,3 +4,8 @@ input = ReadTxtOpcode('inputs/day5.txt')
 
 c = IntcodeComputer(input.copy(), 0, 1)
 o = c.RunProgram()
+print(o)
+
+c = IntcodeComputer(input.copy(), 0, 5)
+o = c.RunProgram()
+print(o)
