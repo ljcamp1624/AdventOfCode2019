@@ -30,11 +30,11 @@ class IntcodeComputer():
             param_idx = [0]
         for i in param_idx:
             if param_modes[i] == 0:
-                params[i] = self.memory[params[i]]
+                params[i] = self.GetFromMemory([params[i]])[0]
             elif param_modes[i] == 1:
                 params[i] = params[i]
             elif param_modes[i] == 2:
-                params[i] = self.memory[params[i] + self.relative_base]
+                params[i] = self.GetFromMemory([params[i] + self.relative_base])[0]
             else:
                 raise Exception('Unrecognized parameter mode')
         desc += ' to ' + str(params)
@@ -64,6 +64,21 @@ class IntcodeComputer():
         if self.debug:
             print('\tOutput Parameters: ' + desc)
         return params
+    
+    def GetFromMemory(self, indices):
+        out = []
+        for i in indices:
+            if i > len(self.memory):
+                out.append(0)
+            else:
+                out.append(self.memory[i])
+        return out
+    
+    def AssignToMemory(self, index, value):
+        if index >= len(self.memory):
+            extra = index - len(self.memory) + 1
+            self.memory += [0]*extra
+        self.memory[index] = value
 
     def RunProgram(self):
         while True:
@@ -86,12 +101,14 @@ class IntcodeComputer():
                 delta = 3
             else:
                 raise Exception('Unrecognized Opcode ' + str(opcode) + ' at memory address ' + str(self.address))
-            params = self.memory[(self.address+1):(self.address+delta)]
+            
+            # Extend memory if needed
+            params = self.GetFromMemory(list(range(self.address+1, self.address+delta)))
             param_modes = param_modes[:len(params)]
             
             # Debug
             if self.debug:
-                print(self.address, full_opcode, param_modes, params)
+                print('Address: {}; Opcode: {}; Param Modes: {}; Params: {}'.format(self.address, full_opcode, param_modes, params))
 
             # Update parameters according to paramater modes
             params = self.ProcessInputParameters(opcode, params, param_modes)
@@ -111,19 +128,19 @@ class IntcodeComputer():
         
         if opcode == 1:
             val = params[0] + params[1]
-            self.memory[params[2]] = val
+            self.AssignToMemory(params[2], val)
             desc = 'Address ' + str(params[2]) + ' set to ' + str(val)
 
         elif opcode == 2:
             val = params[0] * params[1]
-            self.memory[params[2]] = val
+            self.AssignToMemory(params[2], val)
             desc = 'Address ' + str(params[2]) + ' set to ' + str(val)
 
         elif opcode == 3:
             if len(self.input_vals) == 0:
                 raise Exception('No input value at memory address ' + str(self.address))
             val = self.input_vals.pop(0)
-            self.memory[params[0]] = val
+            self.AssignToMemory(params[0], val)
             desc = 'Address ' + str(params[0]) + ' set to ' + str(val)
 
         elif opcode == 4:
@@ -147,7 +164,7 @@ class IntcodeComputer():
                 val = 1
             else:
                 val = 0
-            self.memory[params[2]] = val
+            self.AssignToMemory(params[2], val)
             desc = 'Address ' + str(params[2]) + ' set to ' + str(val)
                 
         elif opcode == 8:
@@ -155,7 +172,7 @@ class IntcodeComputer():
                 val = 1
             else:
                 val = 0
-            self.memory[params[2]] = val
+            self.AssignToMemory(params[2], val)
             desc = 'Address ' + str(params[2]) + ' set to ' + str(val)
                 
         elif opcode == 9:

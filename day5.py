@@ -2,7 +2,12 @@
 
 input = ReadTxtOpcode('inputs/day5.txt')
 
-c = IntcodeComputer(input.copy(), 0, [1], 0, False)
+c = IntcodeComputer(
+        memory=input.copy(),
+        address=0,
+        input_vals=[1],
+        relative_base=0,
+        debug=False)
 while True:
     o = c.RunProgram()
     if c.status == 'Halted':
@@ -10,6 +15,11 @@ while True:
     print(o)
     
 
-c = IntcodeComputer(input.copy(), 0, [5], 0, False)
+c = IntcodeComputer(
+        memory=input.copy(),
+        address=0,
+        input_vals=[5],
+        relative_base=0,
+        debug=False)
 o = c.RunProgram()
 print(o)
