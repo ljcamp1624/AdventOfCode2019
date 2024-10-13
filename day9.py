@@ -1,4 +1,4 @@
-# from advent.intcode import IntcodeComputer, ReadTxtOpcode
+from advent.intcode import IntcodeComputer, ReadTxtOpcode
 from itertools import permutations
 
 input = ReadTxtOpcode('inputs/day9.txt')

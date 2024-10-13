@@ -1,4 +1,4 @@
-# from advent.intcode import IntcodeComputer, ReadTxtOpcode
+from advent.intcode import IntcodeComputer, ReadTxtOpcode
 
 input = ReadTxtOpcode('inputs/day5.txt')
 
