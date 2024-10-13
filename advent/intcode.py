@@ -20,7 +20,7 @@ class IntcodeComputer():
         return opcode, param_modes
     
     def ProcessInputParameters(self, opcode, params, param_modes):
-        desc = 'Input parameters transformed from ' + str(params)
+        # Set the indices for input parameters based on opcode
         param_idx = []
         if opcode in [1, 2, 5, 6, 7, 8]:
             param_idx = [0, 1]
@@ -28,6 +28,8 @@ class IntcodeComputer():
             return params
         elif opcode in (4, 9):
             param_idx = [0]
+        desc = 'Input parameters transformed from ' + str([params[i] for i in param_idx])
+        # Transform input indices based on param modes
         for i in param_idx:
             if param_modes[i] == 0:
                 params[i] = self.GetFromMemory([params[i]])[0]
@@ -37,13 +39,14 @@ class IntcodeComputer():
                 params[i] = self.GetFromMemory([params[i] + self.relative_base])[0]
             else:
                 raise Exception('Unrecognized parameter mode')
-        desc += ' to ' + str(params)
+        desc += ' to ' + str([params[i] for i in param_idx])
         if self.debug:
-            print('\tInput Parameters: ' + desc)
+            # Print description in debug mode
+            print('\t'+desc)
         return params
     
     def ProcessOutputParameters(self, opcode, params, param_modes):
-        desc = 'Output parameters transformed from ' + str(params)
+        # Set the indices for output parameters based on opcode
         param_idx = []
         if opcode in [1, 2, 7, 8]:
             param_idx = [2]
@@ -51,6 +54,8 @@ class IntcodeComputer():
             param_idx = [0]
         elif opcode in (4, 9, 5, 6):
             return params
+        desc = 'Output parameters transformed from ' + str([params[i] for i in param_idx])
+        # Transform output indices based on param modes
         for i in param_idx:
             if param_modes[i] == 0:
                 params[i] = params[i]
@@ -60,15 +65,16 @@ class IntcodeComputer():
                 params[i] = params[i] + self.relative_base
             else:
                 raise Exception('Unrecognized parameter mode')
-        desc += ' to ' + str(params)
+        desc += ' to ' + str([params[i] for i in param_idx])
         if self.debug:
-            print('\tOutput Parameters: ' + desc)
+            # Print description in debug mode
+            print('\t'+desc)
         return params
     
     def GetFromMemory(self, indices):
         out = []
         for i in indices:
-            if i > len(self.memory):
+            if i >= len(self.memory):
                 out.append(0)
             else:
                 out.append(self.memory[i])
@@ -108,7 +114,7 @@ class IntcodeComputer():
             
             # Debug
             if self.debug:
-                print('Address: {}; Opcode: {}; Param Modes: {}; Params: {}'.format(self.address, full_opcode, param_modes, params))
+                print('Address: {}; Opcode: {}; Param Modes: {}; Params: {};'.format(self.address, full_opcode, param_modes, params))
 
             # Update parameters according to paramater modes
             params = self.ProcessInputParameters(opcode, params, param_modes)
@@ -129,58 +135,70 @@ class IntcodeComputer():
         if opcode == 1:
             val = params[0] + params[1]
             self.AssignToMemory(params[2], val)
-            desc = 'Address ' + str(params[2]) + ' set to ' + str(val)
+            desc1 = '{} + {} = {}'.format(params[0], params[1], val)
+            desc2 = 'Memory at address {} set to {}.'.format(params[2], val)
 
         elif opcode == 2:
             val = params[0] * params[1]
             self.AssignToMemory(params[2], val)
-            desc = 'Address ' + str(params[2]) + ' set to ' + str(val)
+            desc1 = '{} * {} = {}'.format(params[0], params[1], val)
+            desc2 = 'Memory at address {} set to {}.'.format(params[2], val)
 
         elif opcode == 3:
             if len(self.input_vals) == 0:
                 raise Exception('No input value at memory address ' + str(self.address))
             val = self.input_vals.pop(0)
             self.AssignToMemory(params[0], val)
-            desc = 'Address ' + str(params[0]) + ' set to ' + str(val)
+            desc1 = 'Grabbed {} from inputs.'.format(val)
+            desc2 = 'Memory at address {} set to {}.'.format(params[0], val)
 
         elif opcode == 4:
-            desc = 'Returned value ' + str(params[0])
+            desc1 = 'Assign {} as output.'.format(params[0])
+            desc2 = 'Returned value {}.'.format(params[0])
             return_val = params[0]
 
         elif opcode == 5:
-            desc = 'No operation'
+            desc1 = 'Checking {} == 1.'.format(params[0])
+            desc2 = 'No action taken.'
             if params[0]:
                 self.address = params[1]
-                desc = 'Address updated to ' + str(params[1])
+                desc2 = 'Address set to {}'.format(params[1])
 
         elif opcode == 6:
-            desc = 'No operation'
+            desc1 = 'Checking {} == 0.'.format(params[0])
+            desc2 = 'No action taken.'
             if not params[0]:
                 self.address = params[1]
-                desc = 'Address updated to ' + str(params[1])
+                desc2 = 'Address set to {}'.format(params[1])
                     
         elif opcode == 7:
+            desc1 = 'Checking {} < {}.'.format(params[0], params[1])
             if params[0] < params[1]:
                 val = 1
             else:
                 val = 0
             self.AssignToMemory(params[2], val)
-            desc = 'Address ' + str(params[2]) + ' set to ' + str(val)
+            desc2 = 'Memory at address {} set to {}.'.format(params[2], val)
                 
         elif opcode == 8:
+            desc1 = 'Checking {} == {}.'.format(params[0], params[1])
             if params[0] == params[1]:
                 val = 1
             else:
                 val = 0
             self.AssignToMemory(params[2], val)
-            desc = 'Address ' + str(params[2]) + ' set to ' + str(val)
+            desc2 = 'Memory at address {} set to {}.'.format(params[2], val)
                 
         elif opcode == 9:
-            self.relative_base = params[0]
-            desc = 'Relative base set to ' + str(params[0])
+            desc1 = None
+            desc2 = 'Relative base updated from {} to {}.'.format(self.relative_base, params[0])
+            self.relative_base += params[0]
             
         if self.debug:
-            print('\tOperation: '+desc)
+            if desc1:
+                print('\tOperation: '+desc1)
+            if desc2:
+                print('\tResult: '+desc2)
         
         if return_val is not None:
             return return_val
