@@ -5,13 +5,15 @@ def ReadTxtOpcode(file_name):
 
 class IntcodeComputer():
     
-    def __init__(self, memory=[], address=0, input_vals=[], relative_base=0, debug=False):
+    def __init__(self, memory=[], address=0, input_vals=[], relative_base=0, debug=False, input_prompt=False):
         self.memory = memory
         self.address = address
         self.input_vals = input_vals
         self.relative_base = relative_base
         self.status = 'Waiting'
+        self.input_prompt = input_prompt
         self.debug = debug
+        self.manual_input = None
         
     def ProcessOpcode(self, full_opcode):
         opcode = full_opcode % 100
@@ -90,7 +92,10 @@ class IntcodeComputer():
         while True:
             
             # Process the full opcode
-            self.status = 'Running'
+            if self.status == 'Waiting for input':
+                self.status = 'Processing input'
+            else:
+                self.status = 'Running'
             full_opcode = self.memory[self.address]
             opcode, param_modes = self.ProcessOpcode(full_opcode)
             
@@ -121,11 +126,19 @@ class IntcodeComputer():
             params = self.ProcessOutputParameters(opcode, params, param_modes)
             
             # Run opcode
-            self.address += delta
             output = self.RunOpcode(opcode, params)
-            if output is not None:
+            
+            # If running the opcode provides an output then act on it
+            if output == 'Waiting for input':
+                self.status = 'Waiting for input'
+                return None
+            elif output is not None:
                 self.status = 'Waiting'
+                self.address += delta
                 return output
+            
+            # Keep going
+            self.address += delta
             
     def RunOpcode(self, opcode=None, params=None, address_delta=0):
         return_val = None
@@ -145,9 +158,21 @@ class IntcodeComputer():
             desc2 = 'Memory at address {} set to {}.'.format(params[2], val)
 
         elif opcode == 3:
-            if len(self.input_vals) == 0:
-                raise Exception('No input value at memory address ' + str(self.address))
-            val = self.input_vals.pop(0)
+            if self.input_prompt:
+                if self.status == 'Waiting for input':
+                    raise Exception('Opportuntiy to provide input was granted but no input was received. Provide input via IncodeComputer.manual_input.')
+                elif self.status == 'Processing input':
+                    if self.manual_input is None:
+                        raise Exception('Opportuntiy to provide input was granted but no input was received. Provide input via IncodeComputer.manual_input.')
+                    val = self.manual_input
+                    self.manual_input = None
+                    self.status = 'Running'
+                else:
+                    return 'Waiting for input'
+            else:
+                if len(self.input_vals) == 0:
+                    raise Exception('No input value at memory address ' + str(self.address))
+                val = self.input_vals.pop(0)
             self.AssignToMemory(params[0], val)
             desc1 = 'Grabbed {} from inputs.'.format(val)
             desc2 = 'Memory at address {} set to {}.'.format(params[0], val)
