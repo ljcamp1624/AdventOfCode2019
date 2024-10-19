@@ -29,9 +29,9 @@ def PrintScreen(objects):
 c = IntcodeComputer(
         memory=input.copy(),
         address=0,
-        input_vals=[],
+        input_vals=[0],
         relative_base=0,
-        debug=False)
+        debug=True)
 objects = {}
 while c.status != 'Halted':
     x = c.RunProgram()
@@ -47,16 +47,17 @@ print(sum([v==2 for _, v in objects]))
 c = IntcodeComputer(
         memory=input.copy(),
         address=0,
-        input_prompt=True,
+        use_manual_input=True,
         relative_base=0,
-        debug=True)
+        debug=False)
 c.memory[0] = 2
 
 objects = {}
 while c.status != 'Halted':
-    while c.status != 'Waiting for input':
+    while True:
+
         x = c.RunProgram()
-        if c.status != 'Waiting for input':
+        if c.status in ['Waiting for input', 'Halted']:
             break
         elif x == -1:
             _ = c.RunProgram()
@@ -65,16 +66,20 @@ while c.status != 'Halted':
             y = c.RunProgram()
             v = c.RunProgram()
             objects[(x, y)] = v
+
         if v == 3:
             curr_paddle_x = x
         elif v == 4:
             curr_ball_x = x
-    move = curr_ball_x - curr_paddle_x
-    if move == 0:
-        c.manual_input = 0
-    elif move > 0:
-        c.manual_input = 1
-    elif move < 0:
-        c.manual_input = -1
+
+    if c.status == 'Waiting for input':
+        move = curr_ball_x - curr_paddle_x
+        if move == 0:
+            c.SetManualInput(0)
+        elif move > 0:
+            c.SetManualInput(1)
+        elif move < 0:
+            c.SetManualInput(-1)
+
     PrintScreen(objects);
     print(s)

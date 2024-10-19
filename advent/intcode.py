@@ -5,15 +5,16 @@ def ReadTxtOpcode(file_name):
 
 class IntcodeComputer():
     
-    def __init__(self, memory=[], address=0, input_vals=[], relative_base=0, debug=False, input_prompt=False):
+    def __init__(self, memory=[], address=0, input_vals=[], relative_base=0, debug=False, use_manual_input=False):
         self.memory = memory
         self.address = address
         self.input_vals = input_vals
         self.relative_base = relative_base
         self.status = 'Waiting'
-        self.input_prompt = input_prompt
+        self.use_manual_input = use_manual_input
         self.debug = debug
         self.manual_input = None
+        self.new_address = None
         
     def ProcessOpcode(self, full_opcode):
         opcode = full_opcode % 100
@@ -87,15 +88,28 @@ class IntcodeComputer():
             extra = index - len(self.memory) + 1
             self.memory += [0]*extra
         self.memory[index] = value
+        
+    def SetManualInput(self, manual_input):
+        if not self.use_manual_input:
+            raise Exception('use_manual_input set to False')
+        elif self.status != 'Waiting for input':
+            raise Exception('IntcodeComputer is not currently ready to accept a manual input')
+        self.manual_input = manual_input
+        self.status = 'Processing input'
 
     def RunProgram(self):
         while True:
             
             # Process the full opcode
             if self.status == 'Waiting for input':
+                raise Exception('manual_input not set with the SetManualInput method')
+            if self.status == 'Processing input':
                 self.status = 'Processing input'
+            elif self.status == 'Running':
+                self.status = 'Running'
             else:
                 self.status = 'Running'
+                
             full_opcode = self.memory[self.address]
             opcode, param_modes = self.ProcessOpcode(full_opcode)
             
@@ -112,6 +126,7 @@ class IntcodeComputer():
                 delta = 3
             else:
                 raise Exception('Unrecognized Opcode ' + str(opcode) + ' at memory address ' + str(self.address))
+            self.new_address = self.address + delta
             
             # Extend memory if needed
             params = self.GetFromMemory(list(range(self.address+1, self.address+delta)))
@@ -133,12 +148,11 @@ class IntcodeComputer():
                 self.status = 'Waiting for input'
                 return None
             elif output is not None:
-                self.status = 'Waiting'
                 self.address += delta
                 return output
             
             # Keep going
-            self.address += delta
+            self.address = self.new_address
             
     def RunOpcode(self, opcode=None, params=None, address_delta=0):
         return_val = None
@@ -158,17 +172,17 @@ class IntcodeComputer():
             desc2 = 'Memory at address {} set to {}.'.format(params[2], val)
 
         elif opcode == 3:
-            if self.input_prompt:
-                if self.status == 'Waiting for input':
-                    raise Exception('Opportuntiy to provide input was granted but no input was received. Provide input via IncodeComputer.manual_input.')
+            if self.use_manual_input:
+                if self.status == 'Running':
+                    return 'Waiting for input'
+                elif self.status == 'Waiting for input':
+                    raise Exception('Use the SetManualInput method to define IncodeComputer.manual_input.')
                 elif self.status == 'Processing input':
                     if self.manual_input is None:
-                        raise Exception('Opportuntiy to provide input was granted but no input was received. Provide input via IncodeComputer.manual_input.')
-                    val = self.manual_input
-                    self.manual_input = None
-                    self.status = 'Running'
-                else:
-                    return 'Waiting for input'
+                        raise Exception('manual_input is empty')
+                val = self.manual_input
+                self.manual_input = None
+                self.status = 'Running'
             else:
                 if len(self.input_vals) == 0:
                     raise Exception('No input value at memory address ' + str(self.address))
@@ -186,14 +200,14 @@ class IntcodeComputer():
             desc1 = 'Checking {} == 1.'.format(params[0])
             desc2 = 'No action taken.'
             if params[0]:
-                self.address = params[1]
+                self.new_address = params[1]
                 desc2 = 'Address set to {}'.format(params[1])
 
         elif opcode == 6:
             desc1 = 'Checking {} == 0.'.format(params[0])
             desc2 = 'No action taken.'
             if not params[0]:
-                self.address = params[1]
+                self.new_address = params[1]
                 desc2 = 'Address set to {}'.format(params[1])
                     
         elif opcode == 7:
